@@ -4,6 +4,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { connectDB } from "./lib/DB.js";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./lib/inngest.js";
+import cors from "cors";
 import path from "path";
 
 import timeRoutes from "./routes/timeRoutes.js";
@@ -13,14 +14,17 @@ const __dirname = path.resolve();
 
 const app = express();
 
+app.use(express.json());
 app.use(clerkMiddleware());
 
-//Middleware
-
-app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Exact origin
+    credentials: true, // Must match frontend's withCredentials
+  })
+);
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
-
 app.use("/api/time", timeRoutes);
 
 app.get("/itawit", (req, res) => {

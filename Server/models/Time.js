@@ -12,15 +12,22 @@ const timeSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    quote: {
-      type: String,
-      default: "",
-    },
+
     history: [
       {
-        time: { type: Number, required: true },
-        updatedAt: { type: Date, default: Date.now },
-        quote: { type: String },
+        addedTime: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        quote: {
+          type: String,
+          required: true,
+        },
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
     owner: {
