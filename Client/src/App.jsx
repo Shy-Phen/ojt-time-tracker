@@ -31,15 +31,10 @@ const App = () => {
           element={!session?.user ? <Dashboard /> : <Navigate to="/" replace />}
         />
 
-        <Route
-          path="/auth/:pathname"
-          element={!session?.user ? <AuthPage /> : <Navigate to="/" replace />}
-        />
+        <Route path="/auth/:pathname" element={<AuthPage />} />
         <Route
           path="/account/settings"
-          element={
-            session?.user ? <Settings /> : <Navigate to="/dashboard" replace />
-          }
+          element={session?.user ? <Settings /> : <Navigate to="/dashboard" />}
         />
       </Routes>
       <Toaster />
