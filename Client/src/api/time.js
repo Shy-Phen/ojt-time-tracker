@@ -15,9 +15,12 @@ export const timeApi = {
     const response = await axiosInstance.put("/time", data);
     return response.data;
   },
-  getHistory: async () => {
-    const response = await axiosInstance.put("/time")
-    return response.data
+
+  getDownloadToExcel: async () => {
+    const response = await axiosInstance.get("/time/excelDownload", {
+      responseType: "blob", // CRUCIAL: Tell axios to handle binary data
+    });
+    return response;
   },
 
   deleteTime: async () => {

@@ -1,12 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=BBH+Bogle&family=Cal+Sans&family=Rethink+Sans:ital,wght@0,400..800;1,400..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
 
 @import "tailwindcss";
-@plugin "daisyui";
 
-@plugin "daisyui" {
-  themes: black;
-}
+@import "tw-animate-css";
+@import "@daveyplate/better-auth-ui/css";
+
+@custom-variant dark (&:is(.dark *));
+@plugin "daisyui";
 
 * {
   font-family: "Cal Sans", sans-serif;
 }
+
+

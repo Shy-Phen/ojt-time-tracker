@@ -1,6 +1,7 @@
 import Time from "../models/Time.js";
 import { getRandomQuote } from "../lib/quote.js";
 import mongoose from "mongoose";
+import ExcelJS from "exceljs";
 
 export const createTime = async (req, res) => {
   const session = await mongoose.startSession();
@@ -10,7 +11,7 @@ export const createTime = async (req, res) => {
 
     console.log("hit");
     const { goalTime } = req.body;
-    const owner = req.user._id;
+    const owner = req.userId;
 
     if (!goalTime || goalTime <= 0) {
       await session.abortTransaction();
@@ -62,7 +63,7 @@ export const updateTime = async (req, res) => {
     session = await mongoose.startSession();
     console.log("Update reach");
 
-    const userId = req.user._id;
+    const userId = req.userId;
 
     const { adjustment } = req.body;
     console.log(adjustment);
@@ -113,6 +114,12 @@ export const updateTime = async (req, res) => {
     const currentTime = userTime.currentTime;
     const newCurrentTime = currentTime + adjustment;
 
+    console.log("HIjrtrj");
+    if (newCurrentTime > userTime.goalTime) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, error: "Error exceeed" });
+    }
+
     // If adjustment is negative (decrease), check if we have enough time
     if (adjustment < 0) {
       const decreaseAmount = Math.abs(adjustment);
@@ -134,19 +141,15 @@ export const updateTime = async (req, res) => {
       }
 
       // Check if decrease would result in exactly 0 or less
-      if (newCurrentTime <= 0) {
+      if (newCurrentTime < 0) {
         await session.abortTransaction();
         return res.status(400).json({
           success: false,
           error: `Decreasing by ${decreaseAmount} hours would result in ${newCurrentTime} hours. Time cannot be zero or negative.`,
-          code: "TIME_WOULD_BE_ZERO_OR_NEGATIVE",
-          data: {
-            currentTime: currentTime,
-            requestedDecrease: decreaseAmount,
-            resultingTime: newCurrentTime,
-          },
         });
       }
+
+      console.log("Hittt");
     }
 
     // Get a random quote
@@ -194,46 +197,14 @@ export const updateTime = async (req, res) => {
       },
     });
   } catch (error) {
-    if (session) {
-      await session.abortTransaction();
-    }
-
-    console.error("Update time error:", error);
-
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        error: "Data validation failed",
-        details: error.message,
-        code: "VALIDATION_ERROR",
-      });
-    }
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        error: "Duplicate entry detected",
-        code: "DUPLICATE_ENTRY",
-      });
-    }
-
-    if (error.name === "MongoError" || error.name === "MongoServerError") {
-      return res.status(503).json({
-        success: false,
-        error: "Database service unavailable",
-        code: "DATABASE_ERROR",
-      });
-    }
-
+    await session.abortTransaction();
+    console.error("Error in updating time:", error);
     return res.status(500).json({
       success: false,
       error: "Internal server error",
-      code: "SERVER_ERROR",
     });
   } finally {
-    if (session) {
-      await session.endSession();
-    }
+    session.endSession();
   }
 };
 
@@ -243,23 +214,22 @@ export const getTime = async (req, res) => {
   try {
     session.startTransaction();
 
-    const userId = req.user._id;
+    const userId = req.userId;
     console.log(userId);
 
     const userTime = await Time.findOne({
       owner: userId,
     }).session(session);
 
+    await session.commitTransaction();
+
+    // Return null/empty data instead of 404
     if (!userTime) {
-      await session.abortTransaction();
-      return res.status(404).json({
-        success: false,
-        error:
-          "Time record not found or you don't have permission to access it",
+      return res.status(200).json({
+        success: true,
+        data: null, // or you could return a default structure
       });
     }
-
-    await session.commitTransaction();
 
     return res.status(200).json({
       success: true,
@@ -277,58 +247,13 @@ export const getTime = async (req, res) => {
   }
 };
 
-export const viewHistory = async (req, res) => {
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
-    const { userId } = await req.auth();
-    const { id } = req.params;
-
-    const userTime = await Time.findOne({
-      _id: id,
-      owner: userId,
-    }).session(session);
-
-    if (!userTime) {
-      await session.abortTransaction();
-      return res.status(404).json({
-        success: false,
-        error:
-          "Time record not found or you don't have permission to access it",
-      });
-    }
-
-    const history = userTime.history || [];
-
-    await session.commitTransaction();
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        history,
-      },
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    console.error("Error in fetching time history:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    });
-  } finally {
-    session.endSession();
-  }
-};
-
 export const deleteTime = async (req, res) => {
   const session = await mongoose.startSession();
 
   try {
     session.startTransaction();
 
-    const userId = await req.user._id;
+    const userId = await req.userId;
 
     const userTime = await Time.findOne({
       owner: userId,
@@ -365,6 +290,223 @@ export const deleteTime = async (req, res) => {
       success: false,
       error: "Internal server error",
       message: error.message,
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const downloadToExcel = async (req, res) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const userId = req.userId;
+    console.log("here", userId);
+
+    const userTime = await Time.findOne({
+      owner: userId,
+    }).session(session);
+
+    await session.commitTransaction();
+
+    // Check if there's data to export
+    if (!userTime || !userTime?.history) {
+      return res.status(200).json({
+        success: true,
+        message: "No data available for export",
+        data: null,
+      });
+    }
+
+    console.log(userTime);
+    const dataToDownload = userTime.history;
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Time Tracker App";
+    workbook.created = new Date();
+
+    const mainSheet = workbook.addWorksheet("Time History");
+
+    // Define columns based on your data structure
+    mainSheet.columns = [
+      { header: "Date Updated", key: "date", width: 20 },
+      { header: "Time Added", key: "addedTime", width: 15 },
+      { header: "Quote", key: "quote", width: 60 },
+    ];
+
+    // Format date function
+    const formatDate = (date) => {
+      if (!date) return "";
+      const d = new Date(date);
+      return d.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    };
+
+    // Format time function
+    const formatTime = (date) => {
+      if (!date) return "";
+      const d = new Date(date);
+      return d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+
+    // Add data rows - mapping your data structure
+    dataToDownload.forEach((row, index) => {
+      const date = row.updatedAt;
+      mainSheet.addRow({
+        date: `${formatDate(date)} ${formatTime(date)}`,
+        addedTime: row.addedTime,
+        quote: row.quote,
+      });
+
+      // Optional: Add row number if needed
+      // mainSheet.getCell(`A${index + 2}`).value = index + 1;
+    });
+
+    // ========== STYLE HEADER ROW ==========
+    // Mid Blue Header (#4F81BD)
+    const headerRow = mainSheet.getRow(1);
+    headerRow.height = 25; // Set header row height
+
+    headerRow.eachCell((cell) => {
+      // Font styling
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFFFF" }, // White text
+        size: 11,
+        name: "Calibri",
+      };
+
+      // Background color - Mid Blue
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4F81BD" },
+      };
+
+      // Alignment
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true,
+      };
+
+      // Borders
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF2F5597" } },
+        left: { style: "thin", color: { argb: "FF2F5597" } },
+        bottom: { style: "thin", color: { argb: "FF2F5597" } },
+        right: { style: "thin", color: { argb: "FF2F5597" } },
+      };
+    });
+
+    // ========== STYLE DATA ROWS ==========
+    // Normal formatting for data rows
+    for (let i = 2; i <= mainSheet.rowCount; i++) {
+      const row = mainSheet.getRow(i);
+      row.height = 20; // Set data row height
+
+      row.eachCell((cell, colNumber) => {
+        // Basic font
+        cell.font = {
+          size: 10,
+          name: "Calibri",
+        };
+
+        // Alignment - center for numbers, left for text
+        if (colNumber === 2) {
+          // Added Time column
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: "center",
+          };
+          // Format as number
+          cell.numFmt = "0";
+        } else {
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: "left",
+            wrapText: true,
+          };
+        }
+
+        // Light borders
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE0E0E0" } },
+          left: { style: "thin", color: { argb: "FFE0E0E0" } },
+          bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
+          right: { style: "thin", color: { argb: "FFE0E0E0" } },
+        };
+
+        // Alternate row coloring (zebra stripes)
+        if (i % 2 === 0) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF8F8F8" }, // Very light grey
+          };
+        } else {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFFFF" }, // White
+          };
+        }
+      });
+    }
+
+    // Auto-fit columns for better display
+    mainSheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const cellValue = cell.value;
+        const cellLength = cellValue ? cellValue.toString().length : 0;
+        if (cellLength > maxLength) {
+          maxLength = cellLength;
+        }
+      });
+
+      // Set reasonable column widths
+      const headerLength = column.header ? column.header.length : 10;
+      const calculatedWidth = Math.max(maxLength + 2, headerLength + 2);
+      column.width = Math.min(calculatedWidth, 100); // Cap at 100
+    });
+
+    // Optional: Freeze header row (so it stays visible when scrolling)
+    mainSheet.views = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
+
+    // Set response headers for Excel file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    // Create filename with timestamp
+    const timestamp = new Date().toISOString().split("T")[0];
+    const filename = `time-history-export-${timestamp}.xlsx`;
+
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    // Write Excel file to response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Error in exporting to Excel:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to generate Excel file",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   } finally {
     session.endSession();

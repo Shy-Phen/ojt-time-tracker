@@ -8,10 +8,6 @@ const DeleteModal = () => {
   };
 
   const handleDelete = () => {
-    // If your delete endpoint doesn't need any data, you can pass:
-    // 1. undefined/null: mutate()
-    // 2. An empty object: mutate({})
-    // 3. Or just call mutate() with no arguments if your API doesn't need any data
     mutate();
     document.getElementById("deleteModal")?.close();
   };

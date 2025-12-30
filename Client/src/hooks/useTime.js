@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { timeApi } from "../api/time.js";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -7,10 +7,9 @@ export const useCreateTime = () => {
   const queryClient = useQueryClient();
   const result = useMutation({
     mutationFn: (data) => timeApi.createTime(data), // Accept data here
-
     onSuccess: () => {
-      queryClient.invalidateQueries(),
-        toast.success("Time goal set successfully!");
+      (queryClient.invalidateQueries({ queryKey: ["getTime"] }),
+        toast.success("Time goal set successfully!"));
     },
     onError: (error) => {
       const errorMessage =
@@ -30,9 +29,33 @@ export const useGetTime = () => {
       toast.error(error.response?.data?.message || "Error fetching time");
     },
     retry: 1,
-    staleTime: 60000,
+    staleTime: 100,
   });
   return result;
+};
+
+export const useDownloadToExcel = () => {
+  return useMutation({
+    mutationFn: timeApi.getDownloadToExcel,
+    onSuccess: (response) => {
+      // Create download from blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `time-history-${Date.now()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Excel file downloaded successfully!");
+    },
+    onError: (error) => {
+      toast.error(
+        error.response?.data?.message || "Failed to download Excel file"
+      );
+    },
+  });
 };
 
 export const useUpdateTime = () => {
@@ -55,15 +78,17 @@ export const useUpdateTime = () => {
 export const useDeleteTime = () => {
   const queryClient = useQueryClient();
   const result = useMutation({
-    mutationFn: timeApi.deleteTime,
-    onSettled: () => {
-      // This runs whether the mutation succeeds OR fails
-      queryClient.invalidateQueries({ queryKey: ["getTime"] });
+    mutationFn: async () => {
+      const response = await timeApi.deleteTime();
+      console.log("Delete response:", response); // Debug log
+      return response;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries();
       toast.success("Time goal deleted successfully!");
     },
     onError: (error) => {
+      console.error("Delete error:", error); // Debug log
       toast.error(
         error.response?.data?.message || "Error in deleting time goal"
       );

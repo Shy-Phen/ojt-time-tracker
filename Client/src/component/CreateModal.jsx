@@ -13,14 +13,12 @@ const CreateModal = () => {
 
   const queryClient = useQueryClient();
 
-  
   const { mutate, isPending } = useCreateTime();
 
   const onSubmit = (data) => {
-    // Call the mutation with the form data
     mutate(data, {
       onSuccess: () => {
-        reset(); // Clear the form
+        reset();
         document.getElementById("createModal").close();
         queryClient.invalidateQueries();
       },
@@ -61,7 +59,7 @@ const CreateModal = () => {
                 type="number"
                 {...register("goalTime", { required: true, min: 1 })}
                 placeholder="Enter your time goal"
-                className={`input w-full bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg transition-all ${
+                className={`input w-full bg-white text-black border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg transition-all ${
                   errors.goalTime
                     ? "border-red-500 focus:border-red-500 focus:ring-red-200"
                     : ""

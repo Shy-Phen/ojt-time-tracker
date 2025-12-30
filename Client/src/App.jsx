@@ -1,30 +1,45 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
 import Dashboard from "./page/Dashboard";
-import EditPage from "./page/EditPage";
 import Home from "./page/Home";
-import { Toaster } from "react-hot-toast";
+import AuthPage from "./page/auth/AuthPage";
+import Settings from "@/page/Settings";
+import { Toaster } from "sonner";
+import { authClient } from "./Lib/auth-client";
 
 const App = () => {
-  const { isSignedIn, isLoaded } = useUser();
+  const { data: session, isPending } = authClient.useSession();
 
-  if (!isLoaded) return null;
-
+  if (isPending) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <span className="loading loading-infinity loading-xl"></span>
+      </div>
+    );
+  }
   return (
     <div>
       <Routes>
         <Route
           path="/"
-          element={isSignedIn ? <Home /> : <Navigate to={"/dashboard"} />}
+          element={
+            session?.user ? <Home /> : <Navigate to="/dashboard" replace />
+          }
         />
         <Route
           path="/dashboard"
-          element={!isSignedIn ? <Dashboard /> : <Navigate to={"/"} />}
+          element={!session?.user ? <Dashboard /> : <Navigate to="/" replace />}
+        />
+
+        <Route
+          path="/auth/:pathname"
+          element={!session?.user ? <AuthPage /> : <Navigate to="/" replace />}
         />
         <Route
-          path="/Edit"
-          element={!isSignedIn ? <EditPage /> : <Navigate to={"/dashboard"} />}
+          path="/account/settings"
+          element={
+            session?.user ? <Settings /> : <Navigate to="/dashboard" replace />
+          }
         />
       </Routes>
       <Toaster />

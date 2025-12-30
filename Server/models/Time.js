@@ -18,7 +18,6 @@ const timeSchema = new mongoose.Schema(
         addedTime: {
           type: Number,
           required: true,
-          min: 0,
         },
         quote: {
           type: String,

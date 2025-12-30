@@ -1,22 +1,22 @@
-import User from "../models/User.js";
+import { getAuth } from "../lib/auth.js";
+import { fromNodeHeaders } from "better-auth/node";
 
 export const protectRoute = async (req, res, next) => {
   try {
-    const { userId } = await req.auth();
+    const auth = getAuth();
 
-    console.log("userId:", userId);
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized - invalid token" });
+    if (!session || !session?.user) {
+      return res.status(401).json({ message: "Unauthorized user" });
     }
 
-    const user = await User.findOne({ clerkId: userId });
+    console.log("hfrhferghfiouerh");
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    req.userId = session.user.id;
 
-    req.user = user;
     next();
   } catch (error) {
     console.error("Error in protectRoute middleware:", error);

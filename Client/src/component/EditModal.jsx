@@ -44,8 +44,8 @@ const EditModal = () => {
       current === 0 && digit === 0
         ? 0
         : current === 0
-        ? digit
-        : parseInt(`${current}${digit}`);
+          ? digit
+          : parseInt(`${current}${digit}`);
     setValue("adjustment", isNegative ? -newAbs : newAbs, {
       shouldDirty: true,
     });

@@ -5,15 +5,15 @@ import {
   updateTime,
   getTime,
   deleteTime,
-  viewHistory,
+  downloadToExcel,
 } from "../controllers/timeController.js";
 
 const router = express.Router();
 
 router.post("/", protectRoute, createTime);
 router.put("/", protectRoute, updateTime);
+router.get("/excelDownload", protectRoute, downloadToExcel);
 router.get("/", protectRoute, getTime);
-router.get("/history", protectRoute, viewHistory);
 router.delete("/", protectRoute, deleteTime);
 
 export default router;
