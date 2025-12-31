@@ -2,7 +2,6 @@
 
 @import "tailwindcss";
 
-@import "tw-animate-css";
 @import "@daveyplate/better-auth-ui/css";
 
 @custom-variant dark (&:is(.dark *));
@@ -11,5 +10,3 @@
 * {
   font-family: "Cal Sans", sans-serif;
 }
-
-
