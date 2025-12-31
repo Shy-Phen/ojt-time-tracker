@@ -28,8 +28,8 @@ export const initializeAuth = async () => {
       database: mongodbAdapter(nativeDb, {
         client: mongoose.connection.getClient(),
       }),
-      secret: DOTENV.BETTER_AUTH_SECRET || "dev-secret-change-in-production",
-      baseURL: DOTENV.BETTER_AUTH_URL || "http://localhost:3000",
+      secret: DOTENV.BETTER_AUTH_SECRET,
+      baseURL: DOTENV.BETTER_AUTH_URL,
       trustedOrigins: DOTENV.TRUSTED_ORIGINS,
       emailAndPassword: {
         enabled: true,
@@ -42,7 +42,7 @@ export const initializeAuth = async () => {
       },
       advanced: {
         session: {
-          name: "auth_session",
+          name: "auth_session",it s
           expiresIn: 60 * 60 * 24 * 7, // 7 days
           updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
           attributes: {
