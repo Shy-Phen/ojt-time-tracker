@@ -30,7 +30,7 @@ export const initializeAuth = async () => {
       }),
       secret: DOTENV.BETTER_AUTH_SECRET || "dev-secret-change-in-production",
       baseURL: DOTENV.BETTER_AUTH_URL || "http://localhost:3000",
-      trustedOrigins: ["http://localhost:5173"],
+      trustedOrigins: DOTENV.TRUSTED_ORIGINS,
       emailAndPassword: {
         enabled: true,
       },
