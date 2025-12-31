@@ -8,7 +8,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Fixed Navbar */}
       <div className="navbar bg-base-100/10 backdrop-blur-md shadow-sm px-4 lg:px-8 fixed top-0 left-0 right-0 z-50">
         <div className="flex-1">
           <img src={timeit2} alt="TimeIt Logo" className="h-5 w-auto" />
@@ -24,11 +23,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Main content that grows */}
       <main className="grow pt-16">
-        {" "}
-        {/* Added pt-16 to account for fixed navbar */}
-        {/* Hero Section - Reduced height */}
         <section className="relative flex flex-col items-center justify-center text-white px-4 font-poppins min-h-[90vh] overflow-hidden">
           {/* Background Image */}
           <img

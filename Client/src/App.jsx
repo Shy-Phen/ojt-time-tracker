@@ -4,13 +4,15 @@ import Dashboard from "./page/Dashboard";
 import Home from "./page/Home";
 import AuthPage from "./page/auth/AuthPage";
 import Settings from "@/page/Settings";
+import { useGetTime } from "./hooks/useTime";
 import { Toaster } from "sonner";
 import { authClient } from "./Lib/auth-client";
 
 const App = () => {
   const { data: session, isPending } = authClient.useSession();
+  const { isPending: isGettingTIme, isLoading } = useGetTime();
 
-  if (isPending) {
+  if (isPending || isGettingTIme || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <span className="loading loading-infinity loading-xl"></span>

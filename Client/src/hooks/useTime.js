@@ -7,9 +7,9 @@ export const useCreateTime = () => {
   const queryClient = useQueryClient();
   const result = useMutation({
     mutationFn: (data) => timeApi.createTime(data), // Accept data here
-    onSuccess: () => {
-      (queryClient.invalidateQueries({ queryKey: ["getTime"] }),
-        toast.success("Time goal set successfully!"));
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["getTime"] });
+      toast.success("Time goal set successfully!");
     },
     onError: (error) => {
       const errorMessage =
@@ -24,12 +24,12 @@ export const useGetTime = () => {
   const result = useQuery({
     queryKey: ["getTime"],
     queryFn: timeApi.getTime,
-    refetchInterval: 5000,
+    refetchInterval: 50000,
     onError: (error) => {
       toast.error(error.response?.data?.message || "Error fetching time");
     },
     retry: 1,
-    staleTime: 100,
+    staleTime: 1000000,
   });
   return result;
 };
@@ -83,8 +83,8 @@ export const useDeleteTime = () => {
       console.log("Delete response:", response); // Debug log
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["getTime"] });
       toast.success("Time goal deleted successfully!");
     },
     onError: (error) => {
