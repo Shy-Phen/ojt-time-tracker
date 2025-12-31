@@ -42,7 +42,7 @@ export const initializeAuth = async () => {
       },
       advanced: {
         session: {
-          name: "auth_session",it s
+          name: "auth_session",
           expiresIn: 60 * 60 * 24 * 7, // 7 days
           updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
           attributes: {
