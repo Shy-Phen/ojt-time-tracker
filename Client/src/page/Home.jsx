@@ -18,7 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const Home = () => {
-  const { data: timeData } = useGetTime();
+  const { data: timeData, isLoading } = useGetTime();
   const { exportToPDF } = useDownloadToPdf();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -36,6 +36,14 @@ const Home = () => {
       toast.error("Failed to export PDF: " + result.error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <span className="loading loading-infinity loading-xl"></span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -60,7 +68,9 @@ const Home = () => {
           <div className="relative flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-2 sm:gap-0">
             <div className="relative text-center sm:text-right">
               <span className="font-[350] text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-[-0.02em] text-white ">
-                {timeData?.data ? timeData?.data?.currentTime : "00"}
+                {timeData?.data?.currentTime
+                  ? timeData?.data?.currentTime
+                  : "00"}
               </span>
             </div>
 
@@ -73,7 +83,7 @@ const Home = () => {
             <div className="relative text-center sm:text-left">
               <div className="inline-block relative">
                 <span className="font-[350] text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-[-0.02em] text-white">
-                  {timeData?.data ? timeData?.data?.goalTime : "00"}
+                  {timeData?.data?.goalTime ? timeData?.data?.goalTime : "00"}
                 </span>
 
                 {!timeData?.data ? (
