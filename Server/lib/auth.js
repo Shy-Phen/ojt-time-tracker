@@ -48,7 +48,7 @@ export const initializeAuth = async () => {
           attributes: {
             httpOnly: true,
             secure: DOTENV.NODE_ENV === "production",
-            sameSite: none,
+            sameSite: "none",
             path: "/",
           },
         },
